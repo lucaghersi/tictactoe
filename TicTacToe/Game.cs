@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
-using System.Text;
 using System.Threading;
 
 namespace TicTacToe
@@ -12,28 +12,36 @@ namespace TicTacToe
     public class Game
     {
         /// <summary>
-        ///     This is the main game board
+        /// This is the main game board
         /// </summary>
-        public int[] GameBoard = Enumerable.Repeat(0, 9).ToArray();
+        public Board Board;
 
         /// <summary>
         ///     This is the list of the players
         /// </summary>
-        public List<Player> Players = new List<Player>
+        public List<Player> Players;
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public Game(List<Player> players, Board board)
         {
-            new Player("Alice", 1, "X"),
-            new Player("Bob", -1, "O")
-        };
+            Board = board;
+            Players = players;
+        }
 
         /// <summary>
         ///     This list contains all the possibile winning condition for a game
         /// </summary>
-        public int[][] WinConditions =
-        {
-            new[] {0, 1, 2}, new[] {3, 4, 5}, new[] {6, 7, 8},
-            new[] {0, 3, 6}, new[] {1, 4, 7}, new[] {2, 5, 8},
-            new[] {0, 4, 8}, new[] {2, 4, 6}
-        };
+        private readonly ImmutableList<ImmutableList<int>> _winConditions = ImmutableList.Create(
+            ImmutableList.Create(0, 1, 2),
+            ImmutableList.Create(3, 4, 5),
+            ImmutableList.Create(6, 7, 8),
+            ImmutableList.Create(0, 3, 6),
+            ImmutableList.Create(1, 4, 7),
+            ImmutableList.Create(2, 5, 8),
+            ImmutableList.Create(0, 4, 8),
+            ImmutableList.Create(2, 4, 6));
 
         /// <summary>
         ///     This property hosts the reference to the current player, if present
@@ -46,62 +54,15 @@ namespace TicTacToe
         public int Round { get; private set; }
 
         /// <summary>
-        ///     Writes the current board to standard console output
+        ///     This list contains all the possibile winning condition for a game
         /// </summary>
-        public virtual void DrawBoard()
+        public ImmutableList<ImmutableList<int>> WinConditions
         {
-            StringBuilder sb = new StringBuilder();
-            sb.AppendFormat(" {0} | {1} | {2}", GetPlayerToken(GameBoard[0]), GetPlayerToken(GameBoard[1]),
-                GetPlayerToken(GameBoard[2]));
-            sb.AppendLine();
-            sb.AppendFormat("---|---|---");
-            sb.AppendLine();
-            sb.AppendFormat(" {0} | {1} | {2}", GetPlayerToken(GameBoard[3]), GetPlayerToken(GameBoard[4]),
-                GetPlayerToken(GameBoard[5]));
-            sb.AppendLine();
-            sb.AppendFormat("---|---|---");
-            sb.AppendLine();
-            sb.AppendFormat(" {0} | {1} | {2}", GetPlayerToken(GameBoard[6]), GetPlayerToken(GameBoard[7]),
-                GetPlayerToken(GameBoard[8]));
-            sb.AppendLine();
-
-            OutputMessage(sb.ToString(), true);
+            get { return _winConditions; }
         }
 
         /// <summary>
-        ///     If present, will return a valid player from the players list
-        /// </summary>
-        /// <param name="code">The player code</param>
-        /// <returns>The <see cref="Player" /> with the matching code, if exists</returns>
-        public Player GetPlayer(int code)
-        {
-            return Players.SingleOrDefault(p => p.Code == code);
-        }
-
-        /// <summary>
-        ///     If a valid code is submitted, will return the player token
-        /// </summary>
-        /// <param name="code">The player code</param>
-        /// <returns>The string representing the player token</returns>
-        public string GetPlayerToken(int code)
-        {
-            var player = GetPlayer(code);
-            return player == null ? " " : player.Token;
-        }
-
-        /// <summary>
-        ///     Write a message to the standard output
-        /// </summary>
-        /// <param name="message">The message to write</param>
-        /// <param name="newLine">True to add a newline after the message, false otherwise</param>
-        public virtual void OutputMessage(string message, bool newLine = false)
-        {
-            Console.Write(message);
-            if (newLine) Console.WriteLine();
-        }
-
-        /// <summary>
-        ///     Check the game board to see if the player wins the game
+        ///     Check the game board to see if the player wins the game.
         /// </summary>
         /// <param name="player">The player code</param>
         /// <returns>True if the player makes a winning move, false otherwise</returns>
@@ -109,26 +70,18 @@ namespace TicTacToe
         {
             if (player == 0) return false;
 
-            return WinConditions.Any(
+            return _winConditions.Any(
                 winCondition =>
-                    GameBoard[winCondition[0]] + GameBoard[winCondition[1]] + GameBoard[winCondition[2]] == player*3);
+                    Board[winCondition[0]] + Board[winCondition[1]] + Board[winCondition[2]] == player * 3);
         }
 
         /// <summary>
-        ///     Check to game board to see if there's any move left
+        ///     Check to game board to see if there's any move left.
         /// </summary>
         /// <returns>True if the game runs out of valid moves, false otherwise</returns>
         public virtual bool IsTheGameTied()
         {
-            return GameBoard.All(g => g != 0);
-        }
-
-        /// <summary>
-        ///     Reset the game board
-        /// </summary>
-        public void ResetBoard()
-        {
-            GameBoard = Enumerable.Repeat(0, 9).ToArray();
+            return Board.GameBoard.All(g => g != 0);
         }
 
         /// <summary>
@@ -138,7 +91,7 @@ namespace TicTacToe
         ///     If none of those conditions apply, a random move will be choosen.
         /// </summary>
         /// <returns>The board position representing the move.</returns>
-        public int CalculateNextMove()
+        public virtual int CalculateNextMove()
         {
             // get winning move for player, if available
             int? move = GetWinningMove(CurrentPlayer.Code);
@@ -147,19 +100,15 @@ namespace TicTacToe
                 return Move(move.Value);
             }
 
-            // get winning move for the other guy, if available
+            // get winning move for the other guy, if available (we try to block him)
             move = GetWinningMove(GetOtherPlayer(CurrentPlayer.Code));
-            if (move != null)
-            {
-                return Move(move.Value);
-            }
 
-            //first available move
-            return Move(null);
+            //first available move (null or move)
+            return Move(move);
         }
 
         /// <summary>
-        ///     Set a board position ad "occupied" by the current player
+        ///     Set a board position ad "occupied" by the current player.
         /// </summary>
         /// <param name="move">The board position to fill; if null, a random valid position will be choosen.</param>
         /// <returns>The board position actually filled.</returns>
@@ -167,52 +116,31 @@ namespace TicTacToe
         {
             if (move == null)
             {
-                move = GetRandomMove();
+                move = Board.GetRandomEmptyCell();
             }
 
-            GameBoard[move.Value] = CurrentPlayer.Code;
+            Board[move.Value] = CurrentPlayer.Code;
             return move.Value;
         }
 
         /// <summary>
-        ///     Check if the player can win the game with the current move.
+        ///     Check if the player can win the game with the current move.   
         /// </summary>
         /// <param name="player">The player code</param>
         /// <returns>The move to make to win the game; if no move is available, null will be returned.</returns>
         public virtual int? GetWinningMove(int player)
         {
             foreach (var winCondition in
-                WinConditions.Where(
+                _winConditions.Where(
                     winCondition =>
-                        GameBoard[winCondition[0]] + GameBoard[winCondition[1]] + GameBoard[winCondition[2]] ==
+                        Board[winCondition[0]] + Board[winCondition[1]] + Board[winCondition[2]] ==
                         player*2))
             {
-                if (GameBoard[winCondition[0]] == 0) return winCondition[0];
-                return GameBoard[winCondition[1]] == 0 ? winCondition[1] : winCondition[2];
+                if (Board[winCondition[0]] == 0) return winCondition[0];
+                return Board[winCondition[1]] == 0 ? winCondition[1] : winCondition[2];
             }
 
             return null;
-        }
-
-        /// <summary>
-        ///     Calculate a random move (valid)
-        /// </summary>
-        /// <returns>A board position representing a valid move to make</returns>
-        public int GetRandomMove()
-        {
-            List<int> randomMoves = new List<int>();
-            for (int index = 0; index < GameBoard.GetLength(0); index++)
-            {
-                if (GameBoard[index] == 0)
-                {
-                    randomMoves.Add(index);
-                }
-            }
-
-            if (randomMoves.Count == 0)
-                throw new InvalidOperationException("This condition cannot happen!");
-
-            return randomMoves[(new Random()).Next(0, randomMoves.Count - 1)];
         }
 
         /// <summary>
@@ -220,14 +148,14 @@ namespace TicTacToe
         /// </summary>
         /// <param name="player">The player code</param>
         /// <returns>Returns the other player code</returns>
-        public int GetOtherPlayer(int player)
+        public virtual int GetOtherPlayer(int player)
         {
             if (player == 1) return -1;
             return 1;
         }
 
         /// <summary>
-        ///     Main game cycle
+        ///     Main game cycle.
         /// </summary>
         /// <param name="sleep">The time (in ms) to wait between two consecutive moves.</param>
         /// <remarks>
@@ -243,30 +171,31 @@ namespace TicTacToe
             CurrentPlayer = Players[0];
             Round = 0;
 
-            OutputMessage(
+            Utility.OutputMessage(
                 String.Format("Hi! {0} and {1} will play TTT today!", Players[0].Name, Players[1].Name), true);
+            Utility.OutputMessage(String.Empty, true);
 
             while (true)
             {
                 Round++;
 
                 int move = CalculateNextMove();
-                OutputMessage(
+                Utility.OutputMessage(
                     String.Format("{0} (sign {1}) moves to position {2}", CurrentPlayer.Name, CurrentPlayer.Token, move),
                     true);
-                DrawBoard();
+                Board.DrawBoard();
 
                 // check is winning move
                 if (IsTheGameWin(CurrentPlayer.Code))
                 {
-                    OutputMessage(String.Format("{0} wins the game!", CurrentPlayer.Name), true);
+                    Utility.OutputMessage(String.Format("{0} wins the game!", CurrentPlayer.Name), true);
                     break;
                 }
 
                 // check is tie
                 if (IsTheGameTied())
                 {
-                    OutputMessage(String.Format("The game goes tie!"), true);
+                    Utility.OutputMessage(String.Format("The game goes tie!"), true);
                     break;
                 }
 

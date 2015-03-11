@@ -1,7 +1,6 @@
 ﻿using System;
-using System.IO;
+using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using Moq;
 using Xunit;
 
@@ -9,129 +8,46 @@ namespace TicTacToe.Test
 {
     public class GameTest
     {
+        private static Game GetGame()
+        {
+            return new Game(GetPlayersList(), GetBoard());
+        }
+
+        private static Board GetBoard()
+        {
+            Board sut = new Board();
+            sut.Initialize(GetPlayersList()[0], GetPlayersList()[1]);
+            return sut;
+        }
+
+        private static List<Player> GetPlayersList()
+        {
+            return new List<Player> { new Player("Alice", 1, "X"), new Player("Bob", -1, "O") };
+        }
+
         [Fact]
         public void NewGameStartsInitialized()
         {
             // arrange
-            Game sut = new Game();
+            Game sut = GetGame();
 
             // assert
-            Assert.Equal(Enumerable.Repeat(0, 9).ToArray(), sut.GameBoard);
-        }
-
-        [Fact]
-        public void GetPlayerReturnsValidPlayerFromList()
-        {
-            // arrange
-            Game sut = new Game();
-
-            // assert
-            Assert.Equal(sut.Players.Single(p => p.Code == -1), sut.GetPlayer(-1));
-        }
-
-        [Fact]
-        public void DrawBoardDrawsCorrectBoard()
-        {
-            // arrange
-            Game sut = new Game();
-
-            StringBuilder sb = new StringBuilder();
-            sb.AppendFormat(" {0} | {1} | {2}",
-                sut.GetPlayerToken(sut.GameBoard[0]),
-                sut.GetPlayerToken(sut.GameBoard[1]),
-                sut.GetPlayerToken(sut.GameBoard[2]));
-            sb.AppendLine();
-            sb.AppendFormat("---|---|---");
-            sb.AppendLine();
-            sb.AppendFormat(" {0} | {1} | {2}",
-                sut.GetPlayerToken(sut.GameBoard[3]),
-                sut.GetPlayerToken(sut.GameBoard[4]),
-                sut.GetPlayerToken(sut.GameBoard[5]));
-            sb.AppendLine();
-            sb.AppendFormat("---|---|---");
-            sb.AppendLine();
-            sb.AppendFormat(" {0} | {1} | {2}",
-                sut.GetPlayerToken(sut.GameBoard[6]),
-                sut.GetPlayerToken(sut.GameBoard[7]),
-                sut.GetPlayerToken(sut.GameBoard[8]));
-            sb.AppendLine();
-            sb.AppendLine();
-
-            // test
-            using (StringWriter sw = new StringWriter())
-            {
-                Console.SetOut(sw);
-
-                sut.DrawBoard();
-
-                Assert.Equal(sb.ToString(), sw.ToString());
-            }
-        }
-
-        [Fact]
-        public void OutputMessagePushMessageToConsole()
-        {
-            // arrange
-            Game sut = new Game();
-            const string expected = "hello!";
-
-            // test
-            using (StringWriter sw = new StringWriter())
-            {
-                Console.SetOut(sw);
-
-                sut.OutputMessage(expected, false);
-                Assert.Equal(expected, sw.ToString());
-            }
-        }
-
-        [Fact]
-        public void OutputMessagePushMessageToConsoleWithNewLine()
-        {
-            // arrange
-            Game sut = new Game();
-
-            const string expected = "hello!";
-            StringBuilder sb = new StringBuilder(expected);
-            sb.AppendLine();
-
-            // test
-            using (StringWriter sw = new StringWriter())
-            {
-                Console.SetOut(sw);
-
-                sut.OutputMessage(expected, true);
-                Assert.Equal(sb.ToString(), sw.ToString());
-            }
-        }
-
-        [Fact]
-        public void ResetBoardWillRestoreEmptyBoard()
-        {
-            // arrange
-            Game sut = new Game();
-            sut.GameBoard[0] = 1;
-
-            // test
-            sut.ResetBoard();
-
-            // assert
-            Assert.Equal(Enumerable.Repeat(0, 9).ToArray(), sut.GameBoard);
+            Assert.Equal(Enumerable.Repeat(0, 9).ToArray(), sut.Board.GameBoard);
         }
 
         [Fact]
         public void IsWinningConditionReturnsTrueWhenThePlayerWins()
         {
             // arrange
-            Game sut = new Game();
+            Game sut = GetGame();
 
             // test
-            foreach (int[] winCondition in sut.WinConditions)
+            foreach (var winCondition in sut.WinConditions)
             {
-                sut.ResetBoard();
-                sut.GameBoard[winCondition[0]] = 1;
-                sut.GameBoard[winCondition[1]] = 1;
-                sut.GameBoard[winCondition[2]] = 1;
+                sut.Board.ResetBoard();
+                sut.Board[winCondition[0]] = 1;
+                sut.Board[winCondition[1]] = 1;
+                sut.Board[winCondition[2]] = 1;
 
                 // assert
                 Assert.True(sut.IsTheGameWin(1));
@@ -140,13 +56,12 @@ namespace TicTacToe.Test
             }
 
             // test
-            sut.ResetBoard();
-            foreach (int[] winCondition in sut.WinConditions)
+            foreach (var winCondition in sut.WinConditions)
             {
-                sut.ResetBoard();
-                sut.GameBoard[winCondition[0]] = -1;
-                sut.GameBoard[winCondition[1]] = -1;
-                sut.GameBoard[winCondition[2]] = -1;
+                sut.Board.ResetBoard();
+                sut.Board[winCondition[0]] = -1;
+                sut.Board[winCondition[1]] = -1;
+                sut.Board[winCondition[2]] = -1;
 
                 // assert
                 Assert.False(sut.IsTheGameWin(1));
@@ -159,17 +74,18 @@ namespace TicTacToe.Test
         public void IsTheGameTiedReturnsTrueWhenTheAreNoMoreValidMoves()
         {
             // arrange
-            Game sut = new Game();
+            Game sut = GetGame();
+
             Assert.False(sut.IsTheGameTied());
 
             // test
-            sut.GameBoard = Enumerable.Repeat(1, 9).ToArray();
+            sut.Board.ResetBoard(1);
 
             // assert
             Assert.True(sut.IsTheGameTied());
 
             // test
-            sut.GameBoard[0] = 0;
+            sut.Board[0] = 0;
 
             // assert
             Assert.False(sut.IsTheGameTied());
@@ -179,27 +95,47 @@ namespace TicTacToe.Test
         public void GetWinningMoveReturnWinningMoveIfAvailable()
         {
             // arrange
-            Game sut = new Game();
+            Game sut = GetGame();
 
-            const int player = 1;
+            int player = 1;
             int otherPlayer = sut.GetOtherPlayer(player);
 
             Assert.Null(sut.GetWinningMove(player));
 
-            foreach (int[] winCondition in sut.WinConditions)
+            foreach (var winCondition in sut.WinConditions)
             {
-                sut.ResetBoard();
+                sut.Board.ResetBoard();
 
                 // no winning
-                sut.GameBoard[winCondition[0]] = player;
+                sut.Board[winCondition[0]] = player;
                 Assert.Null(sut.GetWinningMove(player));
 
                 // winning
-                sut.GameBoard[winCondition[1]] = player;
+                sut.Board[winCondition[1]] = player;
                 Assert.Equal(winCondition[2], sut.GetWinningMove(player));
 
                 // no winning
-                sut.GameBoard[winCondition[2]] = otherPlayer;
+                sut.Board[winCondition[2]] = otherPlayer;
+                Assert.Null(sut.GetWinningMove(player));
+            }
+
+            player = -1;
+            otherPlayer = sut.GetOtherPlayer(player);
+
+            foreach (var winCondition in sut.WinConditions)
+            {
+                sut.Board.ResetBoard();
+
+                // no winning
+                sut.Board[winCondition[0]] = player;
+                Assert.Null(sut.GetWinningMove(player));
+
+                // winning
+                sut.Board[winCondition[1]] = player;
+                Assert.Equal(winCondition[2], sut.GetWinningMove(player));
+
+                // no winning
+                sut.Board[winCondition[2]] = otherPlayer;
                 Assert.Null(sut.GetWinningMove(player));
             }
         }
@@ -208,32 +144,34 @@ namespace TicTacToe.Test
         public void MoveWillExecuteAMoveOnGameBoard()
         {
             // arrange
-            Game sut = new Game();
+            Game sut = GetGame();
+
             sut.CurrentPlayer = sut.Players[0];
             const int position = 0;
 
-            Assert.Equal(0, sut.GameBoard[position]);
+            Assert.Equal(0, sut.Board[position]);
 
             // test
             var move = sut.Move(position);
 
             Assert.Equal(position, move);
-            Assert.Equal(sut.CurrentPlayer.Code, sut.GameBoard[position]);
+            Assert.Equal(sut.CurrentPlayer.Code, sut.Board[position]);
         }
 
         [Fact]
         public void MoveWillExecuteRandomValidMoveWhenMoveIsNull()
         {
             // arrange
-            Game sut = new Game();
+            Game sut = GetGame();
+
             sut.CurrentPlayer = sut.Players[0];
 
             // test
             var move = sut.Move(null);
-            Assert.Equal(sut.CurrentPlayer.Code, sut.GameBoard[move]);
+            Assert.Equal(sut.CurrentPlayer.Code, sut.Board[move]);
 
             // no valid moves - invalid condition
-            sut.GameBoard = Enumerable.Repeat(1, 9).ToArray();
+            sut.Board.ResetBoard(1);
             Assert.Throws<InvalidOperationException>(() => sut.Move(null));
         }
 
@@ -241,7 +179,7 @@ namespace TicTacToe.Test
         public void GetOtherPlayerReturnsOtherPlayer()
         {
             // arrange
-            Game sut = new Game();
+            Game sut = GetGame();
 
             // test
             Assert.Equal(-1, sut.GetOtherPlayer(1));
@@ -252,7 +190,7 @@ namespace TicTacToe.Test
         public void CalculateNextMoveWillMakeRandomMoveIfNoWinningConditionIsAvailable()
         {
             // arrange
-            var gameMock = new Mock<Game> {CallBase = true};
+            var gameMock = new Mock<Game>(GetPlayersList(), GetBoard()) { CallBase = true };
             gameMock.Object.CurrentPlayer = gameMock.Object.Players[0];
 
             gameMock.Setup(g => g.GetWinningMove(gameMock.Object.CurrentPlayer.Code)).Returns(() => null);
@@ -271,7 +209,7 @@ namespace TicTacToe.Test
         {
             // arrange
             const int move = 5;
-            var gameMock = new Mock<Game> {CallBase = true};
+            var gameMock = new Mock<Game>(GetPlayersList(), GetBoard()) { CallBase = true };
             gameMock.Object.CurrentPlayer = gameMock.Object.Players[0];
 
             gameMock.Setup(g => g.GetWinningMove(gameMock.Object.CurrentPlayer.Code)).Returns(() => move);
@@ -289,7 +227,7 @@ namespace TicTacToe.Test
         {
             // arrange
             const int move = 5;
-            var gameMock = new Mock<Game> {CallBase = true};
+            var gameMock = new Mock<Game>(GetPlayersList(), GetBoard()) { CallBase = true };
             gameMock.Object.CurrentPlayer = gameMock.Object.Players[0];
 
             gameMock.Setup(g => g.GetWinningMove(gameMock.Object.CurrentPlayer.Code)).Returns(() => null);
@@ -303,32 +241,14 @@ namespace TicTacToe.Test
         }
 
         [Fact]
-        public void GetRandomMoveReturnsRandomUnplayedCell()
-        {
-            // arrange
-            Game sut = new Game();
-
-            int position = (new Random().Next(0, 8));
-            sut.GameBoard = Enumerable.Repeat(1, 9).ToArray();
-            sut.GameBoard[position] = 0;
-
-            // test
-            int result = sut.GetRandomMove();
-
-            // assert
-            Assert.Equal(position, result);
-        }
-
-        [Fact]
         public void PlayGameWillExitWhenTheGameIsWon()
         {
             // arrange
             const int player = 1;
 
-            var gameMock = new Mock<Game> {CallBase = true};
+            var gameMock = new Mock<Game>(GetPlayersList(), GetBoard()) { CallBase = true };
 
             gameMock.Setup(g => g.IsTheGameWin(player)).Returns(() => true);
-            gameMock.Setup(g => g.OutputMessage(It.IsAny<string>(), true));
             gameMock.Setup(g => g.IsTheGameTied());
 
             // test
@@ -345,10 +265,9 @@ namespace TicTacToe.Test
             // arrange
             const int player = 1;
 
-            var gameMock = new Mock<Game> {CallBase = true};
+            var gameMock = new Mock<Game>(GetPlayersList(), GetBoard()) { CallBase = true };
 
             gameMock.Setup(g => g.IsTheGameWin(player)).Returns(() => false);
-            gameMock.Setup(g => g.OutputMessage(It.IsAny<string>(), true));
             gameMock.Setup(g => g.IsTheGameTied()).Returns(() => true);
 
             // test
@@ -363,9 +282,7 @@ namespace TicTacToe.Test
         public void PlayGameWillCheckForWinOrTieAfterEveryMove()
         {
             // arrange
-            var gameMock = new Mock<Game> {CallBase = true};
-            gameMock.Setup(g => g.DrawBoard());
-            gameMock.Setup(g => g.OutputMessage(It.IsAny<string>(), true));
+            var gameMock = new Mock<Game>(GetPlayersList(), GetBoard()) { CallBase = true };
 
             // test
             gameMock.Object.PlayGame(1);
