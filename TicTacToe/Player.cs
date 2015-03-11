@@ -6,7 +6,7 @@ namespace TicTacToe
     {
         public Player(string name, int code, string token)
         {
-            if (code != 1 && code != -1 && code != 0)
+            if (code != 1 && code != -1)
                 throw new InvalidOperationException("This is an invalid code!");
 
             Name = name;

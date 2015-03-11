@@ -37,23 +37,23 @@ namespace TicTacToe.Test
 
             StringBuilder sb = new StringBuilder();
             sb.AppendFormat(" {0} | {1} | {2}",
-                sut.GetPlayer(sut.GameBoard[0]),
-                sut.GetPlayer(sut.GameBoard[1]),
-                sut.GetPlayer(sut.GameBoard[2]));
+                sut.GetPlayerToken(sut.GameBoard[0]),
+                sut.GetPlayerToken(sut.GameBoard[1]),
+                sut.GetPlayerToken(sut.GameBoard[2]));
             sb.AppendLine();
             sb.AppendFormat("---|---|---");
             sb.AppendLine();
             sb.AppendFormat(" {0} | {1} | {2}",
-                sut.GetPlayer(sut.GameBoard[3]),
-                sut.GetPlayer(sut.GameBoard[4]),
-                sut.GetPlayer(sut.GameBoard[5]));
+                sut.GetPlayerToken(sut.GameBoard[3]),
+                sut.GetPlayerToken(sut.GameBoard[4]),
+                sut.GetPlayerToken(sut.GameBoard[5]));
             sb.AppendLine();
             sb.AppendFormat("---|---|---");
             sb.AppendLine();
             sb.AppendFormat(" {0} | {1} | {2}",
-                sut.GetPlayer(sut.GameBoard[6]),
-                sut.GetPlayer(sut.GameBoard[7]),
-                sut.GetPlayer(sut.GameBoard[8]));
+                sut.GetPlayerToken(sut.GameBoard[6]),
+                sut.GetPlayerToken(sut.GameBoard[7]),
+                sut.GetPlayerToken(sut.GameBoard[8]));
             sb.AppendLine();
             sb.AppendLine();
 
@@ -209,16 +209,16 @@ namespace TicTacToe.Test
         {
             // arrange
             Game sut = new Game();
-            const int player = 1;
+            sut.CurrentPlayer = sut.Players[0];
             const int position = 0;
 
             Assert.Equal(0, sut.GameBoard[position]);
 
             // test
-            var move = sut.Move(player, position);
+            var move = sut.Move(position);
 
             Assert.Equal(position, move);
-            Assert.Equal(player, sut.GameBoard[position]);
+            Assert.Equal(sut.CurrentPlayer.Code, sut.GameBoard[position]);
         }
 
         [Fact]
@@ -226,15 +226,15 @@ namespace TicTacToe.Test
         {
             // arrange
             Game sut = new Game();
-            const int player = 1;
+            sut.CurrentPlayer = sut.Players[0];
 
             // test
-            var move = sut.Move(player, null);
-            Assert.Equal(player, sut.GameBoard[move]);
+            var move = sut.Move(null);
+            Assert.Equal(sut.CurrentPlayer.Code, sut.GameBoard[move]);
 
             // no valid moves - invalid condition
             sut.GameBoard = Enumerable.Repeat(1, 9).ToArray();
-            Assert.Throws<InvalidOperationException>(() => sut.Move(player, null));
+            Assert.Throws<InvalidOperationException>(() => sut.Move(null));
         }
 
         [Fact]
@@ -252,56 +252,54 @@ namespace TicTacToe.Test
         public void CalculateNextMoveWillMakeRandomMoveIfNoWinningConditionIsAvailable()
         {
             // arrange
-            const int player = 1;
             var gameMock = new Mock<Game> {CallBase = true};
+            gameMock.Object.CurrentPlayer = gameMock.Object.Players[0];
 
-            gameMock.Setup(g => g.GetWinningMove(player)).Returns(() => null);
-            gameMock.Setup(g => g.GetWinningMove(gameMock.Object.GetOtherPlayer(player))).Returns(() => null);
-            gameMock.Setup(g => g.Move(player, null)).Verifiable();
+            gameMock.Setup(g => g.GetWinningMove(gameMock.Object.CurrentPlayer.Code)).Returns(() => null);
+            gameMock.Setup(g => g.GetWinningMove(gameMock.Object.GetOtherPlayer(gameMock.Object.CurrentPlayer.Code))).Returns(() => null);
+            gameMock.Setup(g => g.Move(null)).Verifiable();
 
             // test
-            gameMock.Object.CalculateNextMove(player);
+            gameMock.Object.CalculateNextMove();
 
             // assert
-            gameMock.Verify(game => game.Move(player, null), Times.Once());
+            gameMock.Verify(game => game.Move(null), Times.Once());
         }
 
         [Fact]
         public void CalculateNextMoveWillExecuteWinningMoveForPlayerIfAvailable()
         {
             // arrange
-            const int player = 1;
             const int move = 5;
-            var gameMock = new Mock<Game> { CallBase = true };
+            var gameMock = new Mock<Game> {CallBase = true};
+            gameMock.Object.CurrentPlayer = gameMock.Object.Players[0];
 
-            gameMock.Setup(g => g.GetWinningMove(player)).Returns(() => move);
+            gameMock.Setup(g => g.GetWinningMove(gameMock.Object.CurrentPlayer.Code)).Returns(() => move);
 
             // test
-            gameMock.Object.CalculateNextMove(player);
+            gameMock.Object.CalculateNextMove();
 
             // assert
-            gameMock.Verify(game => game.GetWinningMove(gameMock.Object.GetOtherPlayer(player)), Times.Never);
-            gameMock.Verify(game => game.Move(player, move), Times.Once());
-            gameMock.Verify(game => game.Move(gameMock.Object.GetOtherPlayer(player), move), Times.Never());
+            gameMock.Verify(game => game.GetWinningMove(gameMock.Object.GetOtherPlayer(gameMock.Object.CurrentPlayer.Code)), Times.Never);
+            gameMock.Verify(game => game.Move(move), Times.Once());
         }
 
         [Fact]
         public void CalculateNextMoveWillExecuteBlockingMoveForPlayerIfAvailable()
         {
             // arrange
-            const int player = 1;
             const int move = 5;
-            var gameMock = new Mock<Game> { CallBase = true };
+            var gameMock = new Mock<Game> {CallBase = true};
+            gameMock.Object.CurrentPlayer = gameMock.Object.Players[0];
 
-            gameMock.Setup(g => g.GetWinningMove(player)).Returns(() => null);
-            gameMock.Setup(g => g.GetWinningMove(gameMock.Object.GetOtherPlayer(player))).Returns(() => move);
+            gameMock.Setup(g => g.GetWinningMove(gameMock.Object.CurrentPlayer.Code)).Returns(() => null);
+            gameMock.Setup(g => g.GetWinningMove(gameMock.Object.GetOtherPlayer(gameMock.Object.CurrentPlayer.Code))).Returns(() => move);
 
             // test
-            gameMock.Object.CalculateNextMove(player);
+            gameMock.Object.CalculateNextMove();
 
             // assert
-            gameMock.Verify(game => game.Move(player, move), Times.Once());
-            gameMock.Verify(game => game.Move(gameMock.Object.GetOtherPlayer(player), move), Times.Never());
+            gameMock.Verify(game => game.Move(move), Times.Once());
         }
 
         [Fact]
@@ -319,6 +317,62 @@ namespace TicTacToe.Test
 
             // assert
             Assert.Equal(position, result);
+        }
+
+        [Fact]
+        public void PlayGameWillExitWhenTheGameIsWon()
+        {
+            // arrange
+            const int player = 1;
+
+            var gameMock = new Mock<Game> {CallBase = true};
+
+            gameMock.Setup(g => g.IsTheGameWin(player)).Returns(() => true);
+            gameMock.Setup(g => g.OutputMessage(It.IsAny<string>(), true));
+            gameMock.Setup(g => g.IsTheGameTied());
+
+            // test
+            gameMock.Object.PlayGame(1);
+
+            // assert
+            gameMock.Verify(g => g.IsTheGameWin(player), Times.Once);
+            gameMock.Verify(g => g.IsTheGameTied(), Times.Never);
+        }
+
+        [Fact]
+        public void PlayGameWillExitWhenTheGameIsTied()
+        {
+            // arrange
+            const int player = 1;
+
+            var gameMock = new Mock<Game> {CallBase = true};
+
+            gameMock.Setup(g => g.IsTheGameWin(player)).Returns(() => false);
+            gameMock.Setup(g => g.OutputMessage(It.IsAny<string>(), true));
+            gameMock.Setup(g => g.IsTheGameTied()).Returns(() => true);
+
+            // test
+            gameMock.Object.PlayGame(1);
+
+            // assert
+            gameMock.Verify(g => g.IsTheGameWin(player), Times.Once);
+            gameMock.Verify(g => g.IsTheGameTied(), Times.Once);
+        }
+
+        [Fact]
+        public void PlayGameWillCheckForWinOrTieAfterEveryMove()
+        {
+            // arrange
+            var gameMock = new Mock<Game> {CallBase = true};
+            gameMock.Setup(g => g.DrawBoard());
+            gameMock.Setup(g => g.OutputMessage(It.IsAny<string>(), true));
+
+            // test
+            gameMock.Object.PlayGame(1);
+
+            // assert
+            gameMock.Verify(g => g.IsTheGameWin(It.IsAny<int>()), Times.AtLeast(gameMock.Object.Round));
+            gameMock.Verify(g => g.IsTheGameTied(), Times.AtLeast(gameMock.Object.Round - 1));
         }
     }
 }
