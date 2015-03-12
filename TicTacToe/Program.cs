@@ -25,8 +25,10 @@ namespace TicTacToe
                 var board = new Board();
                 board.Initialize(players[0], players[1]);
 
+                ISleep sleepService = new Sleep();
+
                 // start a new game
-                Game game = new Game(players, board);
+                Game game = new Game(players, board, sleepService);
                 game.PlayGame(1000);
 
                 Console.Write("Do you want to play again (Y to continue or any other key to exit)? ");

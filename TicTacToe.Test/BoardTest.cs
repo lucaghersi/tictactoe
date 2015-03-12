@@ -22,6 +22,31 @@ namespace TicTacToe.Test
         }
 
         [Fact]
+        public void InitializeCorrectlyInitializeBoard()
+        {
+            // arrange
+            Board sut = new Board();
+
+            // test
+            sut.Initialize(GetPlayersList()[0], GetPlayersList()[1]);
+
+            // assert
+            Assert.Equal(Enumerable.Repeat(0, 9).ToArray(), sut.GameBoard);
+            Assert.Equal(GetPlayersList(), sut.Players);
+        }
+
+        [Fact]
+        public void InitializeBlocksWrongInitialization()
+        {
+            // arrange
+            Board sut = new Board();
+
+            // assert
+            Assert.Throws<ArgumentNullException>(() => sut.Initialize(null, GetPlayersList()[1]));
+            Assert.Throws<ArgumentNullException>(() => sut.Initialize(GetPlayersList()[0], null));
+        }
+
+        [Fact]
         public void ResetBoardWillRestoreEmptyBoard()
         {
             // arrange
@@ -57,6 +82,20 @@ namespace TicTacToe.Test
             // assert
             Assert.Equal(GetPlayersList().Single(p => p.Code == -1), sut.GetPlayer(-1));
         }
+
+        [Fact]
+        public void GetPlayerTokenReturnsCorrectPlayerToken()
+        {
+            // arrange
+            var players = GetPlayersList();
+            string expect = players[0].Token;
+
+            Board sut = GetBoard();
+
+            // assert
+            Assert.Equal(expect, sut.GetPlayerToken(players[0].Code));
+        }
+
 
         [Fact]
         public void DrawBoardDrawsCorrectBoard()

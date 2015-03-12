@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using System.Threading;
 
 namespace TicTacToe
 {
@@ -11,25 +10,6 @@ namespace TicTacToe
     /// </summary>
     public class Game
     {
-        /// <summary>
-        /// This is the main game board
-        /// </summary>
-        public Board Board;
-
-        /// <summary>
-        ///     This is the list of the players
-        /// </summary>
-        public List<Player> Players;
-
-        /// <summary>
-        /// 
-        /// </summary>
-        public Game(List<Player> players, Board board)
-        {
-            Board = board;
-            Players = players;
-        }
-
         /// <summary>
         ///     This list contains all the possibile winning condition for a game
         /// </summary>
@@ -42,6 +22,32 @@ namespace TicTacToe
             ImmutableList.Create(2, 5, 8),
             ImmutableList.Create(0, 4, 8),
             ImmutableList.Create(2, 4, 6));
+
+        /// <summary>
+        ///     This is the main game board
+        /// </summary>
+        public Board Board;
+
+        /// <summary>
+        ///     This is the list of the players
+        /// </summary>
+        public List<Player> Players;
+
+        /// <summary>
+        /// </summary>
+        public Game(List<Player> players, Board board, ISleep sleepService)
+        {
+            if (ReferenceEquals(players, null))
+                throw new ArgumentNullException("players", "Players list is required!");
+            if (ReferenceEquals(board, null))
+                throw new ArgumentNullException("board", "You can't play without a board!");
+            if (ReferenceEquals(sleepService, null))
+                throw new ArgumentNullException("sleepService", "Sleep service is required!");
+
+            Board = board;
+            Players = players;
+            SleepService = sleepService;
+        }
 
         /// <summary>
         ///     This property hosts the reference to the current player, if present
@@ -62,6 +68,11 @@ namespace TicTacToe
         }
 
         /// <summary>
+        /// Sleep service instance
+        /// </summary>
+        public ISleep SleepService { get; private set; }
+
+        /// <summary>
         ///     Check the game board to see if the player wins the game.
         /// </summary>
         /// <param name="player">The player code</param>
@@ -72,7 +83,7 @@ namespace TicTacToe
 
             return _winConditions.Any(
                 winCondition =>
-                    Board[winCondition[0]] + Board[winCondition[1]] + Board[winCondition[2]] == player * 3);
+                    Board[winCondition[0]] + Board[winCondition[1]] + Board[winCondition[2]] == player*3);
         }
 
         /// <summary>
@@ -124,7 +135,7 @@ namespace TicTacToe
         }
 
         /// <summary>
-        ///     Check if the player can win the game with the current move.   
+        ///     Check if the player can win the game with the current move.
         /// </summary>
         /// <param name="player">The player code</param>
         /// <returns>The move to make to win the game; if no move is available, null will be returned.</returns>
@@ -166,8 +177,6 @@ namespace TicTacToe
         /// </remarks>
         public virtual void PlayGame(int sleep)
         {
-            sleep = sleep < 1 ? 1000 : sleep;
-
             CurrentPlayer = Players[0];
             Round = 0;
 
@@ -201,7 +210,7 @@ namespace TicTacToe
 
                 CurrentPlayer = Players.Single(p => p.Code == GetOtherPlayer(CurrentPlayer.Code));
 
-                Thread.Sleep(sleep);
+                SleepService.Wait(sleep);
             }
         }
     }

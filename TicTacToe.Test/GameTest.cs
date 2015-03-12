@@ -10,7 +10,7 @@ namespace TicTacToe.Test
     {
         private static Game GetGame()
         {
-            return new Game(GetPlayersList(), GetBoard());
+            return new Game(GetPlayersList(), GetBoard(), new Sleep());
         }
 
         private static Board GetBoard()
@@ -23,6 +23,15 @@ namespace TicTacToe.Test
         private static List<Player> GetPlayersList()
         {
             return new List<Player> { new Player("Alice", 1, "X"), new Player("Bob", -1, "O") };
+        }
+
+        [Fact]
+        public void GameCannotStartWithoutProperInitialization()
+        {
+            // assert
+            Assert.Throws<ArgumentNullException>(() => new Game(null, GetBoard(), new Sleep()));
+            Assert.Throws<ArgumentNullException>(() => new Game(GetPlayersList(), null, new Sleep()));
+            Assert.Throws<ArgumentNullException>(() => new Game(GetPlayersList(), GetBoard(), null));
         }
 
         [Fact]
@@ -190,7 +199,7 @@ namespace TicTacToe.Test
         public void CalculateNextMoveWillMakeRandomMoveIfNoWinningConditionIsAvailable()
         {
             // arrange
-            var gameMock = new Mock<Game>(GetPlayersList(), GetBoard()) { CallBase = true };
+            var gameMock = new Mock<Game>(GetPlayersList(), GetBoard(), new Sleep()) { CallBase = true };
             gameMock.Object.CurrentPlayer = gameMock.Object.Players[0];
 
             gameMock.Setup(g => g.GetWinningMove(gameMock.Object.CurrentPlayer.Code)).Returns(() => null);
@@ -209,7 +218,7 @@ namespace TicTacToe.Test
         {
             // arrange
             const int move = 5;
-            var gameMock = new Mock<Game>(GetPlayersList(), GetBoard()) { CallBase = true };
+            var gameMock = new Mock<Game>(GetPlayersList(), GetBoard(), new Sleep()) { CallBase = true };
             gameMock.Object.CurrentPlayer = gameMock.Object.Players[0];
 
             gameMock.Setup(g => g.GetWinningMove(gameMock.Object.CurrentPlayer.Code)).Returns(() => move);
@@ -227,7 +236,7 @@ namespace TicTacToe.Test
         {
             // arrange
             const int move = 5;
-            var gameMock = new Mock<Game>(GetPlayersList(), GetBoard()) { CallBase = true };
+            var gameMock = new Mock<Game>(GetPlayersList(), GetBoard(), new Sleep()) { CallBase = true };
             gameMock.Object.CurrentPlayer = gameMock.Object.Players[0];
 
             gameMock.Setup(g => g.GetWinningMove(gameMock.Object.CurrentPlayer.Code)).Returns(() => null);
@@ -246,7 +255,7 @@ namespace TicTacToe.Test
             // arrange
             const int player = 1;
 
-            var gameMock = new Mock<Game>(GetPlayersList(), GetBoard()) { CallBase = true };
+            var gameMock = new Mock<Game>(GetPlayersList(), GetBoard(), new Sleep()) { CallBase = true };
 
             gameMock.Setup(g => g.IsTheGameWin(player)).Returns(() => true);
             gameMock.Setup(g => g.IsTheGameTied());
@@ -265,7 +274,7 @@ namespace TicTacToe.Test
             // arrange
             const int player = 1;
 
-            var gameMock = new Mock<Game>(GetPlayersList(), GetBoard()) { CallBase = true };
+            var gameMock = new Mock<Game>(GetPlayersList(), GetBoard(), new Sleep()) { CallBase = true };
 
             gameMock.Setup(g => g.IsTheGameWin(player)).Returns(() => false);
             gameMock.Setup(g => g.IsTheGameTied()).Returns(() => true);
@@ -282,7 +291,7 @@ namespace TicTacToe.Test
         public void PlayGameWillCheckForWinOrTieAfterEveryMove()
         {
             // arrange
-            var gameMock = new Mock<Game>(GetPlayersList(), GetBoard()) { CallBase = true };
+            var gameMock = new Mock<Game>(GetPlayersList(), GetBoard(), new Sleep()) { CallBase = true };
 
             // test
             gameMock.Object.PlayGame(1);
@@ -290,6 +299,20 @@ namespace TicTacToe.Test
             // assert
             gameMock.Verify(g => g.IsTheGameWin(It.IsAny<int>()), Times.AtLeast(gameMock.Object.Round));
             gameMock.Verify(g => g.IsTheGameTied(), Times.AtLeast(gameMock.Object.Round - 1));
+        }
+
+        [Fact]
+        public void PlayGameWillCallSleepServiceAfterEveryMove()
+        {
+            // arrange
+            var sleepMock = new Mock<ISleep>();
+            var gameMock = new Mock<Game>(GetPlayersList(), GetBoard(), sleepMock.Object) { CallBase = true };
+
+            // test
+            gameMock.Object.PlayGame(1);
+
+            // assert
+            sleepMock.Verify(g => g.Wait(It.IsAny<int>()), Times.Exactly(gameMock.Object.Round - 1));
         }
     }
 }
