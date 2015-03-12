@@ -13,16 +13,16 @@ namespace TicTacToe.Test
             return new Game(GetPlayersList(), GetBoard(), new Sleep());
         }
 
-        private static Board GetBoard()
+        private static IBoard GetBoard()
         {
-            Board sut = new Board();
-            sut.Initialize(GetPlayersList()[0], GetPlayersList()[1]);
-            return sut;
+            IBoard board = new Board();
+            board.Initialize(GetPlayersList()[0], GetPlayersList()[1]);
+            return board;
         }
 
-        private static List<Player> GetPlayersList()
+        private static List<IPlayer> GetPlayersList()
         {
-            return new List<Player> { new Player("Alice", 1, "X"), new Player("Bob", -1, "O") };
+            return new List<IPlayer> { new Player("Alice", 1, "X"), new Player("Bob", -1, "O") };
         }
 
         [Fact]

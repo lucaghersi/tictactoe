@@ -5,7 +5,7 @@ namespace TicTacToe
     /// <summary>
     /// Represent a game player
     /// </summary>
-    public class Player
+    public class Player : IPlayer
     {
         /// <summary>
         /// Initializes a new instace of <see cref="Player"/>

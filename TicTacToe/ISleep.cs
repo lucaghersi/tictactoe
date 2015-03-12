@@ -1,21 +1,14 @@
-﻿using System.Threading;
-
-namespace TicTacToe
+﻿namespace TicTacToe
 {
     /// <summary>
     /// Provider sleep services
     /// </summary>
-    public class Sleep : ISleep
+    public interface ISleep
     {
         /// <summary>
         /// Pause thread for the specified amout of time
         /// </summary>
         /// <param name="sleep"></param>
-        public void Wait(int sleep)
-        {
-            sleep = sleep < 1 ? 1000 : sleep;
-
-            Thread.Sleep(sleep);
-        }
+        void Wait(int sleep);
     }
 }

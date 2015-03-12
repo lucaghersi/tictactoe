@@ -26,16 +26,16 @@ namespace TicTacToe
         /// <summary>
         ///     This is the main game board
         /// </summary>
-        public Board Board;
+        public IBoard Board;
 
         /// <summary>
         ///     This is the list of the players
         /// </summary>
-        public List<Player> Players;
+        public List<IPlayer> Players;
 
         /// <summary>
         /// </summary>
-        public Game(List<Player> players, Board board, ISleep sleepService)
+        public Game(List<IPlayer> players, IBoard board, ISleep sleepService)
         {
             if (ReferenceEquals(players, null))
                 throw new ArgumentNullException("players", "Players list is required!");
@@ -52,7 +52,7 @@ namespace TicTacToe
         /// <summary>
         ///     This property hosts the reference to the current player, if present
         /// </summary>
-        public Player CurrentPlayer { get; set; }
+        public IPlayer CurrentPlayer { get; set; }
 
         /// <summary>
         ///     This is the current round

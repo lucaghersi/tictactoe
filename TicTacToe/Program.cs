@@ -17,14 +17,14 @@ namespace TicTacToe
             while(playAgain)
             {
                 // replace with your favorite injection engine! :D
-                List<Player> players = new List<Player>
+                List<IPlayer> players = new List<IPlayer>
                 {
                     new Player("Alice", 1, "X"),
                     new Player("Bob", -1, "O")
                 };
-                var board = new Board();
-                board.Initialize(players[0], players[1]);
 
+                IBoard board = new Board();
+                board.Initialize(players[0], players[1]);
                 ISleep sleepService = new Sleep();
 
                 // start a new game

@@ -8,7 +8,7 @@ namespace TicTacToe
     /// <summary>
     ///     Manage the board
     /// </summary>
-    public class Board
+    public class Board : IBoard
     {
         /// <summary>
         ///     The token for a free space on the board.
@@ -38,14 +38,14 @@ namespace TicTacToe
         /// <summary>
         ///     This is the list of the players
         /// </summary>
-        public List<Player> Players { get; private set; }
+        public List<IPlayer> Players { get; private set; }
 
         /// <summary>
         ///     Initialize the board
         /// </summary>
         /// <param name="player1">The first player</param>
         /// <param name="player2">The second player</param>
-        public void Initialize(Player player1, Player player2)
+        public void Initialize(IPlayer player1, IPlayer player2)
         {
             if (ReferenceEquals(player1, null))
                 throw new ArgumentNullException("player1", "A player is required!");
@@ -53,7 +53,7 @@ namespace TicTacToe
                 throw new ArgumentNullException("player1", "A player is required!");
 
             GameBoard = Enumerable.Repeat(0, 9).ToArray();
-            Players = new List<Player> {player1, player2};
+            Players = new List<IPlayer> {player1, player2};
         }
 
         /// <summary>
@@ -92,8 +92,8 @@ namespace TicTacToe
         ///     If present, will return a valid player from the players list
         /// </summary>
         /// <param name="code">The player code</param>
-        /// <returns>The <see cref="Player" /> with the matching code, if exists</returns>
-        public virtual Player GetPlayer(int code)
+        /// <returns>The <see cref="IPlayer" /> with the matching code, if exists</returns>
+        public virtual IPlayer GetPlayer(int code)
         {
             return Players.SingleOrDefault(p => p.Code == code);
         }
